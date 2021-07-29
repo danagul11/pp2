@@ -1,123 +1,293 @@
-import pygame,time
+import pygame
 import random
-from pygame.locals import *
-# Initialize pygame program
+import time
 pygame.init()
+WIDTH = 600
+HEIGHT = 600
 
-# Surface
-SCREEN_WIDTH, SCREEN_HEIGHT = 800,500
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Hungry lion")
+blue=(0,0,255)
+red = (255,0,0)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('Snake Game')
 font = pygame.font.SysFont('Arial', 30)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-
-running = True
-
-clock = pygame.time.Clock()
-# Frames Per Second
 FPS = 30
-x,y,dx,dy=100,100,10,10
-block=10
-score=0
-enemy = []
-food = []
- 
-# Loop 50 times and add a snow flake in a random x,y position
-for i in range(50):
-    ex = random.randrange(10, SCREEN_WIDTH-50)
-    ey = random.randrange(10, SCREEN_HEIGHT-50)
-    enemy.append([ex, ey,30,20])
-
-for i in range(10):
-    fx = random.randrange(10, SCREEN_WIDTH-50)
-    fy = random.randrange(10, SCREEN_HEIGHT-50)
-    food.append([fx, fy,30,20])
-
-# Main loop
-while running:
-  # Event loop
-  pressed_keys = pygame.key.get_pressed()
-  if pressed_keys[K_LEFT]:
-    x-=block
-  if pressed_keys[K_RIGHT]:
-    x+=block
-  if pressed_keys[K_UP]:
-    y-=block
-  if pressed_keys[K_DOWN]:
-    y+=block
-
-  for event in pygame.event.get():
-    if event.type == pygame.QUIT:
-      running = False
-    # if event.type == pygame.KEYDOWN:
-
-  screen.fill(WHITE)
-  show = font.render('Score: ' + str(score), True, BLACK)
-
-  pygame.draw.rect(screen,BLUE,(x,y,dx,dy))
-  for i in range(len(enemy)):
-    pygame.draw.rect(screen,RED,enemy[i])
-
-    # Move the snow flake down one pixel
-    enemy[i][1] += 1
-
-    # If the snow flake has moved off the bottom of the screen
-    if (x>=enemy[i][0] and x<=enemy[i][0]+30 and y>=enemy[i][1] and y<=enemy[i][1]+30) or (x <=enemy[i][0] and x+10>=enemy[i][0] and y<=enemy[i][1] and y+10>=enemy[i][1]):
-      pygame.mixer.music.load('lose.wav')
-      pygame.mixer.music.play(1)
-      score-=1
-      ey = random.randrange(-50, -10)
-      enemy[i][1] = ey
-      # Give it a new x position
-      ex = random.randrange(10, SCREEN_WIDTH-50)
-      enemy[i][0] = ex
-    if enemy[i][1] > SCREEN_HEIGHT:
-        # Reset it just above the top
-        ey = random.randrange(-50, -10)
-        enemy[i][1] = ey
-        # Give it a new x position
-        ex = random.randrange(10, SCREEN_WIDTH-50)
-        enemy[i][0] = ex
-
-  for i in range(len(food)):
-      pygame.draw.rect(screen,GREEN,food[i])
-      ran=random.randrange(-3,3)
-      food[i][0] += ran
-      food[i][1] += ran
-      if (x>=food[i][0] and x<=food[i][0]+30 and y>=food[i][1] and y<=food[i][1]+30) or (x <=food[i][0] and x+10>=food[i][0] and y<=food[i][1] and y+10>=food[i][1]):
-        pygame.mixer.music.load('coin.wav')
-        pygame.mixer.music.play(1)
-        score+=1
-        fy = random.randrange(10, SCREEN_HEIGHT-50)
-        food[i][1] = fy
-        # Give it a new x position
-        fx = random.randrange(10, SCREEN_WIDTH-50)
-        food[i][0] = fx
-      # If the snow flake has moved off the bottom of the screen
-      if food[i][1] > SCREEN_HEIGHT or food[i][1] <0 or food[i][0] > SCREEN_WIDTH or food[i][0] <0  :
-          # Reset it just above the top
-          fy = random.randrange(10, SCREEN_HEIGHT-50)
-          food[i][1] = fy
-          # Give it a new x position
-          fx = random.randrange(10, SCREEN_WIDTH-50)
-          food[i][0] = fx
-  screen.blit(show, (20, 20))
-  if score<0:
-    for i in range(500):
-      screen.fill(WHITE)  
-      font2 = pygame.font.SysFont('Arial', 50)
-      GO = font2.render('Game is OVER '+ 'Your Score: ' + str(score), True, BLACK)
-      screen.blit(GO, (100, 200))
-      pygame.display.flip()
-
-    running=False
-  pygame.display.flip()
-
-  clock.tick(FPS)
+clock = pygame.time.Clock()
+class Snake:
+    def __init__(self,color):
+        self.color=color
+        self.speed=5
+        self.size = 3
+        self.radius = 10
+        self.dx = self.speed
+        self.dy = 0
+        self.elements = [[300, 300], [120, 100], [140, 100]]
+        self.score = 0
+        self.is_add = False
+    def draw(self):
+        for element in self.elements:
+            pygame.draw.circle(screen, self.color, element, self.radius)
+    def add_snake(self):
+        self.size += 1
+        self.score += 1
+        self.elements.append([0, 0])
+        self.is_add = False
+    def move(self):
+        if self.is_add:
+            self.add_snake()
+        for i in range(self.size - 1, 0, -1):
+            self.elements[i][0] = self.elements[i - 1][0]
+            self.elements[i][1] = self.elements[i - 1][1]
+        self.elements[0][0] += self.dx
+        self.elements[0][1] += self.dy
+class Food:
+    def __init__(self):
+        self.x = random.randint(100, WIDTH - 70)
+        self.y = random.randint(100, HEIGHT - 70)
+        self.image = pygame.transform.scale(pygame.image.load("materials/hamburger.png"),[30,30])
+        # self.position = [random.randint(0, WIDTH - 100), random.randint(0, HEIGHT - 100)]
 
 
-pygame.quit()
+    def draw(self):
+        screen.blit(self.image, (self.x, self.y))
+
+
+def show_score(x, y, score,color):
+    show = font.render('Score: ' + str(score), True, color)
+    screen.blit(show, (x, y))
+
+def collision():
+    if food.x <snake.elements[0][0]+snake.radius and food.x+35 >snake.elements[0][0] - snake.radius and food.y  < snake.elements[0][1] + snake.radius  and food.y+35> snake.elements[0][1] - snake.radius:
+        snake.is_add = True
+        food.x = random.randint(50, WIDTH - 70)
+        food.y = random.randint(50, HEIGHT - 70)
+    
+
+def create_map(level_num):
+    global gm,snake
+    speeds=[5,10,15,20]
+    snake.speed=speeds[level_num-1]
+    with open(f'lvl/{level_num}.txt', mode='r') as file:
+        row_num = 0  # row number
+        for row in file:
+            for block_num in range(len(row)):
+                if row[block_num] == '1':
+                    screen.blit(wall_image, (block_num*30,row_num*40))
+                    if snake.elements[0][0]>block_num*30 and snake.elements[0][0]<block_num*30 +29 and snake.elements[0][1]>row_num*40 and snake.elements[0][1]<row_num*40 + 44:
+                        gm = True
+
+            row_num += 1
+
+
+def game_over():
+    # pygame.display.flip()
+    screen.fill((255, 0, 0))
+    txt = font.render('GAME OVER!', True, (255, 255, 255))
+    my_score = font.render('Draw Total score: ' + str(snake.score) , True, (255, 255, 255))
+
+    screen.blit(txt, (200, 200))
+    screen.blit(my_score, (100, 300))
+    pygame.display.flip()
+    time.sleep(3)
+    gm = False
+    # pygame.quit()
+
+snake = Snake(blue)
+
+food = Food()
+
+
+wall_image = pygame.transform.scale(pygame.image.load('materials/wall.png'),[30,45])
+gm =False
+go = True
+def single():
+    global gm,go,snake,food
+    gm=False
+    snake = Snake(blue)
+    food = Food()
+    stop=True
+    while go:
+
+        collision()
+        screen.fill((165, 206, 216))
+        sc=snake.score//5        
+        create_map(sc+1)
+        mil = clock.tick(FPS)
+        if gm:
+            game_over()
+            go = False
+        snake.move()
+        snake.draw()
+        food.draw()
+        show_score(35, 45, snake.score,blue)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                go = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    snake.dx = snake.speed
+                    snake.dy = 0
+                if event.key == pygame.K_LEFT:
+                    snake.dx = -snake.speed
+                    snake.dy = 0
+                if event.key == pygame.K_UP:
+                    snake.dx = 0
+                    snake.dy = -snake.speed
+                if event.key == pygame.K_DOWN:
+                    snake.dx = 0
+                    snake.dy = snake.speed
+                if event.key == pygame.K_k:
+                    saves=[snake.elements,snake.score,food.x,food.y,snake.dx,snake.dy,
+                    snake.size]
+                    with open('lvl/save.txt', mode='w') as f:
+                        for i in saves:
+                            f.write("%s \n" % (i))
+                        f.close()
+                    go=False
+                if event.key == pygame.K_SPACE:
+                    stop = True
+            while stop:
+                    screen.fill((165, 206, 216))
+                    create_map(1)
+                    mil = clock.tick(FPS)
+                    snake.draw()
+                    food.draw()
+                    show_score(35, 45, snake.score,blue)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            stop=False
+                            go = False
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_SPACE:
+                                stop = False
+        pygame.display.flip()
+    go=True
+
+def saved_game():
+    global gm,go,snake,food
+
+    with open('lvl/save.txt', mode='r') as f:
+        data = f.read().splitlines()
+    gm=False
+    snake = Snake(blue)
+    food = Food()
+    stop=True
+    snake.elements=eval(data[0])
+    snake.score=eval(data[1])
+    food.x=eval(data[2])
+    food.y=eval(data[3])
+    snake.dx=eval(data[4])
+    snake.dy=eval(data[5])
+    snake.size=eval(data[6])
+    f.close()
+    while go:
+
+        collision()
+        screen.fill((165, 206, 216))
+        sc=snake.score//5
+        create_map(sc+1)
+        mil = clock.tick(FPS)
+        if gm:
+            game_over()
+            go = False
+        snake.move()
+        snake.draw()
+        food.draw()
+        show_score(35, 45, snake.score,blue)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                go = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    snake.dx = snake.speed
+                    snake.dy = 0
+                if event.key == pygame.K_LEFT:
+                    snake.dx = -snake.speed
+                    snake.dy = 0
+                if event.key == pygame.K_UP:
+                    snake.dx = 0
+                    snake.dy = -snake.speed
+                if event.key == pygame.K_DOWN:
+                    snake.dx = 0
+                    snake.dy = snake.speed
+                if event.key == pygame.K_k:
+                    saves=[snake.elements,snake.score,food.x,food.y,snake.dx,snake.dy,snake.size]
+                    with open('lvl/save.txt', mode='w') as f:
+                        for i in saves:
+                            f.write("%s \n" % (i))
+                        f.close()
+                    go=False
+                if event.key == pygame.K_SPACE:
+                    stop = True
+            while stop:
+                    screen.fill((165, 206, 216))
+                    create_map(1)
+                    mil = clock.tick(FPS)
+                    snake.draw()
+                
+                    food.draw()
+                    show_score(35, 45, snake.score,blue)
+                    
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            stop=False
+                            go = False
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_SPACE:
+                                stop = False
+        pygame.display.flip()
+    go=True
+
+def draw_text(text,font1,color,surface,x,y):
+    textobj = font1.render(text,1,color)
+    textrect = textobj.get_rect()
+    textrect.topleft = (x,y)
+    surface.blit(textobj,textrect)
+font1 = pygame.font.SysFont('TimesNewRoman',50)
+def MainMenu():
+    global click
+    click = False
+    while True:
+        screen.fill((255,255,255))
+
+        mx,my = pygame.mouse.get_pos()
+
+        button_1 = pygame.Rect(150,200,400,50)
+        button_2 = pygame.Rect(150,300,400,50)
+        # button_3 = pygame.Rect(250,400,400,50)
+        pygame.draw.rect(screen,(192,192,192),button_1)
+        pygame.draw.rect(screen,(192,192,192),button_2)
+        # pygame.draw.rect(screen,(192,192,192),button_3)
+        draw_text('New Game',font1,(0,0,0),screen,150,200)
+        draw_text('Saved Game',font1,(0,0,0),screen,150,300)
+        draw_text('Snake Game',pygame.font.SysFont('ARIAL',75),(0,0,0),screen,150,50)
+
+        if button_1.collidepoint((mx,my)):
+            draw_text('New Game',font1,(255,255,255),screen,150,200)
+            if click :
+                single()
+        if button_2.collidepoint((mx,my)):
+            draw_text('Saved Game',font1,(255,255,255),screen,150,300)
+            if click:
+               saved_game()
+
+
+
+
+        click=False
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+        pygame.display.update()
+        pygame.time.Clock().tick(30)
+
+MainMenu()
+
